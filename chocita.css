@@ -14,9 +14,9 @@
       }
 
       .hero {
-        background: url("img1.jpg") center/cover no-repeat;
+        background: url("img1.jpg") center 75%/cover no-repeat;
         color: #fff;
-        min-height: 65vh;
+        min-height: 80vh;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -124,8 +124,8 @@
 
       @media (max-width: 767px) {
         .hero {
-          min-height: 40vh;
-          background-position: center 20%;
+          min-height: 34vh;
+          background-position: center 70%;
         }
 
         .galeria img {
