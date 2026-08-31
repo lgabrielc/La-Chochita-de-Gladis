@@ -64,8 +64,9 @@ export async function onRequest(context) {
     const body = await request.json().catch(() => null);
     const state = await getGalleryState(bucket);
     const activeIds = new Set(state.photos.filter((photo) => photo.active !== false).map((photo) => photo.id));
-    if (!body || !Array.isArray(body.carousel) || !body.carousel.every((id) => typeof id === "string" && activeIds.has(id))) return json({ error: "Carrusel no válido." }, 400);
-    state.carousel = [...new Set(body.carousel)];
+    const carousel = Array.isArray(body) ? body : body?.carousel;
+    if (!Array.isArray(carousel) || !carousel.every((id) => typeof id === "string" && activeIds.has(id))) return json({ error: "Carrusel no válido." }, 400);
+    state.carousel = [...new Set(carousel)];
     await saveGalleryState(bucket, state);
     return json(state);
   }
