@@ -6,14 +6,11 @@ const json = (data, status = 200) => Response.json(data, { status, headers: { "C
 
 function authorized(request, env) {
   if (!env.ADMIN_PASSWORD) return false;
-  const value = request.headers.get("Authorization") || "";
-  if (!value.startsWith("Basic ")) return false;
-  try { return atob(value.slice(6)).split(":").slice(1).join(":") === env.ADMIN_PASSWORD; }
-  catch { return false; }
+  return request.headers.get("X-Admin-Password") === env.ADMIN_PASSWORD;
 }
 
 function unauthorized() {
-  return new Response("No autorizado", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="Galería privada"' } });
+  return json({ error: "Contraseña incorrecta o secreto no configurado." }, 401);
 }
 
 export async function onRequest(context) {
@@ -34,7 +31,7 @@ export async function onRequest(context) {
     const key = `photos/${crypto.randomUUID()}.${TYPES.get(photo.type)}`;
     await bucket.put(key, await photo.arrayBuffer(), { httpMetadata: { contentType: photo.type } });
     const photos = await getGallery(bucket);
-    const newPhoto = { id: crypto.randomUUID(), key, alt: photo.name.replace(/\.[^.]+$/, "") || "Foto de La Chocita" };
+    const newPhoto = { id: crypto.randomUUID(), key, alt: photo.name.replace(/\.[^.]+$/, "") || "Foto de La Chocita", active: true };
     photos.push(newPhoto);
     await saveGallery(bucket, photos);
     return json({ photos, photo: newPhoto }, 201);
@@ -47,16 +44,15 @@ export async function onRequest(context) {
     return json({ photos: body.photos });
   }
 
-  if (request.method === "DELETE" && path === "/photo") {
+  if (request.method === "PATCH" && path === "/photo") {
     const body = await request.json().catch(() => null);
-    if (!body || typeof body.id !== "string") return json({ error: "Foto no válida." }, 400);
+    if (!body || typeof body.id !== "string" || typeof body.active !== "boolean") return json({ error: "Foto no válida." }, 400);
     const photos = await getGallery(bucket);
     const photo = photos.find((item) => item.id === body.id);
     if (!photo) return json({ error: "Foto no encontrada." }, 404);
-    if (photo.key) await bucket.delete(photo.key);
-    const nextPhotos = photos.filter((item) => item.id !== body.id);
-    await saveGallery(bucket, nextPhotos);
-    return json({ photos: nextPhotos });
+    photo.active = body.active;
+    await saveGallery(bucket, photos);
+    return json({ photos });
   }
   return json({ error: "Ruta no encontrada." }, 404);
 }
