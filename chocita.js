@@ -65,10 +65,11 @@ function renderCarousel(photos) {
 async function loadManagedGallery() {
   try {
     const response = await fetch("/api/gallery", { cache: "no-store" });
-    const { photos } = await response.json();
+    const { photos, carousel, hero } = await response.json();
     if (response.ok && Array.isArray(photos) && photos.length) {
       renderGallery(photos);
-      renderCarousel(photos);
+      renderCarousel(Array.isArray(carousel) && carousel.length ? carousel : photos);
+      if (hero) document.querySelector(".hero").style.backgroundImage = `url("${photoUrl(hero)}")`;
     }
   } catch {
     // La página conserva sus fotos estáticas hasta que el panel esté configurado.
