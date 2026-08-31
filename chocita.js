@@ -1,6 +1,13 @@
-// Recoge todos los enlaces de galería
-const galleryLinks = Array.from(document.querySelectorAll(".gallery-link"));
+let galleryLinks = [];
 let currentIndex = 0;
+
+function refreshGalleryLinks() {
+  galleryLinks = Array.from(document.querySelectorAll(".gallery-link"));
+  galleryLinks.forEach((link, index) => link.addEventListener("click", (event) => {
+    event.preventDefault();
+    openLightbox(index);
+  }));
+}
 
 function openLightbox(index) {
   const imgSrc = galleryLinks[index].getAttribute("href");
@@ -9,45 +16,54 @@ function openLightbox(index) {
   currentIndex = index;
 }
 
-galleryLinks.forEach((link, idx) => {
-  link.addEventListener("click", function (e) {
-    e.preventDefault();
-    openLightbox(idx);
-  });
-});
-
-function closeLightbox(e) {
-  if (
-    e.target.classList.contains("lightbox") ||
-    e.target.classList.contains("lightbox-close")
-  ) {
+function closeLightbox(event) {
+  if (event.target.classList.contains("lightbox") || event.target.classList.contains("lightbox-close")) {
     document.getElementById("lightbox").classList.remove("active");
     document.getElementById("lightbox-img").src = "";
   }
 }
 
-function showImage(idx) {
-  // Corrige para loop infinito (opcional: quitar el loop si no quieres)
-  if (idx < 0) idx = galleryLinks.length - 1;
-  if (idx >= galleryLinks.length) idx = 0;
-  openLightbox(idx);
+function showImage(index) {
+  if (index < 0) index = galleryLinks.length - 1;
+  if (index >= galleryLinks.length) index = 0;
+  openLightbox(index);
 }
 
-function prevImage(e) {
-  e.stopPropagation();
-  showImage(currentIndex - 1);
+function prevImage(event) { event.stopPropagation(); showImage(currentIndex - 1); }
+function nextImage(event) { event.stopPropagation(); showImage(currentIndex + 1); }
+
+async function loadManagedGallery() {
+  try {
+    const response = await fetch("/api/gallery", { cache: "no-store" });
+    const { photos } = await response.json();
+    if (!response.ok || !Array.isArray(photos) || !photos.length) return;
+    const gallery = document.querySelector(".galeria");
+    gallery.replaceChildren();
+    photos.forEach((photo) => {
+      const col = document.createElement("div");
+      const link = document.createElement("a");
+      const img = document.createElement("img");
+      const source = photo.url || `/media/${photo.key}`;
+      col.className = "col-6 col-md-3";
+      link.className = "gallery-link";
+      link.href = source;
+      img.src = source;
+      img.alt = photo.alt || "Foto de La Chocita de Gladis";
+      link.append(img);
+      col.append(link);
+      gallery.append(col);
+    });
+  } catch {
+    // La galería original continúa visible si el panel aún no está configurado.
+  }
+  refreshGalleryLinks();
 }
 
-function nextImage(e) {
-  e.stopPropagation();
-  showImage(currentIndex + 1);
-}
-
-// Navegación con teclado
-document.addEventListener("keydown", function (e) {
+document.addEventListener("keydown", (event) => {
   if (!document.getElementById("lightbox").classList.contains("active")) return;
-  if (e.key === "Escape")
-    closeLightbox({ target: document.getElementById("lightbox") });
-  if (e.key === "ArrowLeft") showImage(currentIndex - 1);
-  if (e.key === "ArrowRight") showImage(currentIndex + 1);
+  if (event.key === "Escape") closeLightbox({ target: document.getElementById("lightbox") });
+  if (event.key === "ArrowLeft") showImage(currentIndex - 1);
+  if (event.key === "ArrowRight") showImage(currentIndex + 1);
 });
+
+loadManagedGallery();
