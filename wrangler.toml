@@ -1,0 +1,7 @@
+name = "la-chochita-de-gladis"
+pages_build_output_dir = "."
+compatibility_date = "2025-07-07"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "lachocita-media"
