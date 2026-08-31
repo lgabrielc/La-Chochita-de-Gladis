@@ -85,3 +85,28 @@ document.addEventListener("keydown", (event) => {
 });
 
 loadManagedGallery();
+
+async function loadSiteContent() {
+  try {
+    const site = await (await fetch("/api/site", { cache: "no-store" })).json();
+    if (!site.title) return;
+    document.title = site.seoTitle || site.title;
+    document.querySelector('meta[name="description"]').setAttribute("content", site.seoDescription || "");
+    document.querySelector(".hero h1").textContent = site.title;
+    document.querySelector(".hero h4").textContent = site.subtitle;
+    document.querySelector(".container.py-5 h2").textContent = site.welcomeTitle;
+    document.querySelector(".container.py-5 .fs-5").textContent = site.welcomeText;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${site.whatsapp}&text=${encodeURIComponent(`Me interesa saber más sobre ${site.title}`)}`;
+    document.querySelectorAll('a[href*="api.whatsapp.com"]').forEach((link) => { link.href = whatsappUrl; });
+    document.querySelectorAll(".price-main").forEach((node, index) => { node.textContent = site.weekday[index] || node.textContent; });
+    document.querySelectorAll(".price-main2").forEach((node, index) => { node.textContent = site.weekend[index] || node.textContent; });
+    const schedule = document.querySelector(".tarifa-card .mt-3.small");
+    if (schedule) schedule.innerHTML = `<b>Check-in:</b> ${site.checkIn} &nbsp;|&nbsp; <b>Check-out:</b> ${site.checkOut}<br><i>*Casa privada para familia o grupo*</i>`;
+    document.querySelector('a[href*="facebook.com"]').href = site.facebook;
+    document.querySelector('a[href*="tiktok.com"]').href = site.tiktok;
+    const cards = document.querySelectorAll(".pago-terminos-card ul");
+    if (cards[0]) cards[0].querySelectorAll("li").forEach((node, index) => { if (site.payments[index]) node.textContent = site.payments[index]; });
+    if (cards[1]) cards[1].querySelectorAll("li").forEach((node, index) => { if (site.terms[index]) node.textContent = site.terms[index]; });
+  } catch { /* La página conserva el contenido estático hasta que se guarde desde el panel. */ }
+}
+loadSiteContent();
