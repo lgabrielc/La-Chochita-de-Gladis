@@ -1,4 +1,4 @@
-import { getGallery, isPhoto, saveGallery } from "../../_lib/gallery.js";
+import { getGalleryState, isPhoto, saveGalleryState } from "../../_lib/gallery.js";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const TYPES = new Map([["image/jpeg", "jpg"], ["image/png", "png"], ["image/webp", "webp"]]);
@@ -20,7 +20,7 @@ export async function onRequest(context) {
   const path = new URL(request.url).pathname.replace("/api/admin", "") || "/";
   const bucket = env.MEDIA_BUCKET;
 
-  if (request.method === "GET" && path === "/gallery") return json({ photos: await getGallery(bucket) });
+  if (request.method === "GET" && path === "/gallery") return json(await getGalleryState(bucket));
 
   if (request.method === "POST" && path === "/upload") {
     const form = await request.formData();
@@ -30,29 +30,53 @@ export async function onRequest(context) {
     if (photo.size > MAX_IMAGE_BYTES) return json({ error: "Cada foto puede pesar como máximo 12 MB." }, 400);
     const key = `photos/${crypto.randomUUID()}.${TYPES.get(photo.type)}`;
     await bucket.put(key, await photo.arrayBuffer(), { httpMetadata: { contentType: photo.type } });
-    const photos = await getGallery(bucket);
+    const state = await getGalleryState(bucket);
     const newPhoto = { id: crypto.randomUUID(), key, alt: photo.name.replace(/\.[^.]+$/, "") || "Foto de La Chocita", active: true };
-    photos.push(newPhoto);
-    await saveGallery(bucket, photos);
-    return json({ photos, photo: newPhoto }, 201);
+    state.photos.push(newPhoto);
+    await saveGalleryState(bucket, state);
+    return json({ ...state, photo: newPhoto }, 201);
   }
 
   if (request.method === "PUT" && path === "/gallery") {
     const body = await request.json().catch(() => null);
     if (!body || !Array.isArray(body.photos) || !body.photos.every(isPhoto)) return json({ error: "La galería no es válida." }, 400);
-    await saveGallery(bucket, body.photos);
-    return json({ photos: body.photos });
+    const state = await getGalleryState(bucket);
+    state.photos = body.photos;
+    state.carousel = state.carousel.filter((id) => state.photos.some((photo) => photo.id === id));
+    if (!state.photos.some((photo) => photo.id === state.hero && photo.active !== false)) state.hero = state.photos.find((photo) => photo.active !== false)?.id || null;
+    await saveGalleryState(bucket, state);
+    return json(state);
   }
 
   if (request.method === "PATCH" && path === "/photo") {
     const body = await request.json().catch(() => null);
     if (!body || typeof body.id !== "string" || typeof body.active !== "boolean") return json({ error: "Foto no válida." }, 400);
-    const photos = await getGallery(bucket);
-    const photo = photos.find((item) => item.id === body.id);
+    const state = await getGalleryState(bucket);
+    const photo = state.photos.find((item) => item.id === body.id);
     if (!photo) return json({ error: "Foto no encontrada." }, 404);
     photo.active = body.active;
-    await saveGallery(bucket, photos);
-    return json({ photos });
+    if (state.hero === photo.id && !photo.active) state.hero = state.photos.find((item) => item.active !== false)?.id || null;
+    await saveGalleryState(bucket, state);
+    return json(state);
+  }
+
+  if (request.method === "PUT" && path === "/carousel") {
+    const body = await request.json().catch(() => null);
+    const state = await getGalleryState(bucket);
+    const activeIds = new Set(state.photos.filter((photo) => photo.active !== false).map((photo) => photo.id));
+    if (!body || !Array.isArray(body.carousel) || !body.carousel.every((id) => typeof id === "string" && activeIds.has(id))) return json({ error: "Carrusel no válido." }, 400);
+    state.carousel = [...new Set(body.carousel)];
+    await saveGalleryState(bucket, state);
+    return json(state);
+  }
+
+  if (request.method === "PUT" && path === "/hero") {
+    const body = await request.json().catch(() => null);
+    const state = await getGalleryState(bucket);
+    if (!body || typeof body.hero !== "string" || !state.photos.some((photo) => photo.id === body.hero && photo.active !== false)) return json({ error: "Portada no válida." }, 400);
+    state.hero = body.hero;
+    await saveGalleryState(bucket, state);
+    return json(state);
   }
   return json({ error: "Ruta no encontrada." }, 404);
 }

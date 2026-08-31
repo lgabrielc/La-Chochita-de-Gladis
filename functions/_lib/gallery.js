@@ -5,15 +5,25 @@ export const DEFAULT_GALLERY = [
   ["img10.jpeg", "Piscina y vista"], ["img11.jpeg", "Piscina y vista"],
 ].map(([url, alt], index) => ({ id: `legacy-${index + 1}`, url: `/${url}`, alt, active: true }));
 
-export async function getGallery(bucket) {
-  const object = await bucket.get("gallery.json");
-  if (!object) return DEFAULT_GALLERY;
-  try { const data = await object.json(); return Array.isArray(data.photos) ? data.photos : DEFAULT_GALLERY; }
-  catch { return DEFAULT_GALLERY; }
+export function defaultGalleryState() {
+  return { photos: DEFAULT_GALLERY, carousel: DEFAULT_GALLERY.map((photo) => photo.id), hero: DEFAULT_GALLERY[0].id };
 }
 
-export function saveGallery(bucket, photos) {
-  return bucket.put("gallery.json", JSON.stringify({ photos }), { httpMetadata: { contentType: "application/json; charset=utf-8" } });
+export async function getGalleryState(bucket) {
+  const object = await bucket.get("gallery.json");
+  if (!object) return defaultGalleryState();
+  try {
+    const data = await object.json();
+    if (!Array.isArray(data.photos)) return defaultGalleryState();
+    const ids = new Set(data.photos.map((photo) => photo.id));
+    const carousel = Array.isArray(data.carousel) ? data.carousel.filter((id) => ids.has(id)) : data.photos.map((photo) => photo.id);
+    const hero = ids.has(data.hero) ? data.hero : data.photos.find((photo) => photo.active !== false)?.id || null;
+    return { photos: data.photos, carousel, hero };
+  } catch { return defaultGalleryState(); }
+}
+
+export function saveGalleryState(bucket, state) {
+  return bucket.put("gallery.json", JSON.stringify(state), { httpMetadata: { contentType: "application/json; charset=utf-8" } });
 }
 
 export function isPhoto(photo) {
