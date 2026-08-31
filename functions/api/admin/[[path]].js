@@ -42,7 +42,7 @@ export async function onRequest(context) {
     if (!body || !Array.isArray(body.photos) || !body.photos.every(isPhoto)) return json({ error: "La galería no es válida." }, 400);
     const state = await getGalleryState(bucket);
     state.photos = body.photos;
-    state.carousel = state.carousel.filter((id) => state.photos.some((photo) => photo.id === id));
+    state.carousel = state.carousel.filter((id) => state.photos.some((photo) => photo.id === id && photo.active !== false));
     if (!state.photos.some((photo) => photo.id === state.hero && photo.active !== false)) state.hero = state.photos.find((photo) => photo.active !== false)?.id || null;
     await saveGalleryState(bucket, state);
     return json(state);
@@ -56,6 +56,7 @@ export async function onRequest(context) {
     if (!photo) return json({ error: "Foto no encontrada." }, 404);
     photo.active = body.active;
     if (state.hero === photo.id && !photo.active) state.hero = state.photos.find((item) => item.active !== false)?.id || null;
+    if (!photo.active) state.carousel = state.carousel.filter((id) => id !== photo.id);
     await saveGalleryState(bucket, state);
     return json(state);
   }
@@ -65,7 +66,8 @@ export async function onRequest(context) {
     const state = await getGalleryState(bucket);
     const carousel = Array.isArray(body) ? body : body?.carousel;
     if (!Array.isArray(carousel) || !carousel.every((id) => typeof id === "string" && id.length > 0 && id.length < 200)) return json({ error: "Carrusel no válido." }, 400);
-    state.carousel = [...new Set(carousel)];
+    const activeIds = new Set(state.photos.filter((photo) => photo.active !== false).map((photo) => photo.id));
+    state.carousel = [...new Set(carousel.filter((id) => activeIds.has(id)))];
     await saveGalleryState(bucket, state);
     return json(state);
   }

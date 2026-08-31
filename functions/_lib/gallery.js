@@ -16,8 +16,9 @@ export async function getGalleryState(bucket) {
     const data = await object.json();
     if (!Array.isArray(data.photos)) return defaultGalleryState();
     const ids = new Set(data.photos.map((photo) => photo.id));
-    const carousel = Array.isArray(data.carousel) ? data.carousel.filter((id) => ids.has(id)) : data.photos.map((photo) => photo.id);
-    const hero = ids.has(data.hero) ? data.hero : data.photos.find((photo) => photo.active !== false)?.id || null;
+    const activeIds = new Set(data.photos.filter((photo) => photo.active !== false).map((photo) => photo.id));
+    const carousel = Array.isArray(data.carousel) ? [...new Set(data.carousel.filter((id) => activeIds.has(id)))] : data.photos.filter((photo) => photo.active !== false).map((photo) => photo.id);
+    const hero = activeIds.has(data.hero) ? data.hero : data.photos.find((photo) => photo.active !== false)?.id || null;
     return { photos: data.photos, carousel, hero };
   } catch { return defaultGalleryState(); }
 }
