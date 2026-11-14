@@ -1,1 +1,75 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Administrar fotos | La Chocita de Gladis</title><link rel="stylesheet" href="admin.css"></head><body><main class="panel"><a class="back" href="/">← Ver página pública</a><h1>Fotos de La Chocita</h1><p class="intro">Galería, carrusel y portada se administran por separado.</p><section id="login" class="card"><h2>Acceso privado</h2><form id="login-form"><label>Contraseña <input id="password" type="password" required></label><button>Entrar</button><p id="login-error" class="error"></p></form></section><section id="manager" hidden><div class="card"><h2>Añadir fotos a la galería</h2><input id="photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple><p>JPG, PNG o WebP; máximo 12 MB por foto.</p><p id="upload-status"></p></div><section><h2>Galería</h2><p class="hint">Elige qué foto es portada y cuáles aparecen en el carrusel.</p><div id="gallery-list" class="gallery-list"></div></section><section><h2>Carrusel</h2><p class="hint">Solo las fotos seleccionadas. Usa las flechas para su orden propio.</p><div id="carousel-list" class="gallery-list"></div></section></section></main><script src="admin.js" defer></script><script src="site.js" defer></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Administrar fotos | La Chocita de Gladis</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/admin/">
+        <span class="brand-mark" aria-hidden="true">LC</span>
+        <span class="brand-text">La Chocita <small>Panel de administración</small></span>
+      </a>
+      <nav class="topnav" aria-label="Secciones del panel">
+        <a href="#manager">Información</a>
+        <a href="#subir">Subir fotos</a>
+        <a href="#galeria">Galería</a>
+        <a href="#carrusel">Carrusel</a>
+      </nav>
+      <a class="back" href="/" target="_blank" rel="noopener">Ver página pública <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main class="panel">
+    <div class="page-head">
+      <h1>Fotos de La Chocita</h1>
+      <p class="intro">Galería, carrusel y portada se administran por separado.</p>
+    </div>
+
+    <section id="login" class="card login-card">
+      <span class="brand-mark big" aria-hidden="true">LC</span>
+      <h2>Acceso privado</h2>
+      <p class="hint">Ingresa la contraseña del panel para administrar el sitio.</p>
+      <form id="login-form">
+        <label>Contraseña <input id="password" type="password" autocomplete="current-password" required></label>
+        <button>Entrar</button>
+        <p id="login-error" class="error"></p>
+      </form>
+    </section>
+
+    <section id="manager" hidden>
+      <div id="subir" class="card upload-card">
+        <div class="card-head">
+          <h2>Añadir fotos a la galería</h2>
+          <p class="hint">JPG, PNG o WebP; máximo 12 MB por foto. Puedes elegir varias a la vez.</p>
+        </div>
+        <input id="photos-input" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        <p id="upload-status" class="status"></p>
+      </div>
+
+      <section id="galeria" class="card">
+        <div class="card-head">
+          <h2>Galería</h2>
+          <p class="hint">Elige qué foto es portada y cuáles aparecen en el carrusel. Las flechas cambian el orden en la galería.</p>
+        </div>
+        <div id="gallery-list" class="gallery-list"></div>
+      </section>
+
+      <section id="carrusel" class="card">
+        <div class="card-head">
+          <h2>Carrusel</h2>
+          <p class="hint">Solo las fotos seleccionadas. Usa las flechas para su orden propio.</p>
+        </div>
+        <div id="carousel-list" class="gallery-list carousel-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="admin.js" defer></script>
+  <script src="site.js" defer></script>
+</body>
+</html>
